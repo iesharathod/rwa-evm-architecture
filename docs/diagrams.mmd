@@ -1,0 +1,181 @@
+%% =====================================================
+%% 1. Logical System Architecture
+%% =====================================================
+
+flowchart TB
+
+    subgraph Legal_Custody_Layer
+        SPV[SPV / Legal Entity]
+        Custodian[Custodian]
+        Attestation[Custody & Legal Attestation]
+    end
+
+    subgraph Offchain_Layer
+        Backend[Backend API]
+        KYC[KYC Provider]
+        DB[(PostgreSQL)]
+        Indexer[Event Indexer]
+    end
+
+    subgraph Onchain_Layer
+        Token[AssetToken (ERC20)]
+        Compliance[ComplianceModule]
+        Issuance[IssuanceModule]
+        Corporate[CorporateActionsModule]
+    end
+
+    subgraph User_Layer
+        Issuer[Issuer]
+        Investor[Investor]
+        SuperApp[SuperApp UI]
+    end
+
+    Issuer --> SuperApp
+    Investor --> SuperApp
+    SuperApp --> Backend
+
+    Backend --> KYC
+    Backend --> DB
+    Backend --> Issuance
+    Backend --> Compliance
+
+    Issuance --> Token
+    Token --> Compliance
+    Token --> Corporate
+
+    Custodian --> Attestation
+    Attestation --> Backend
+    SPV --> Custodian
+
+    Token --> Indexer
+    Indexer --> DB
+
+%% =====================================================
+%% 2. Issuer Onboarding & Asset Creation Flow
+%% =====================================================
+
+sequenceDiagram
+
+    participant Issuer
+    participant Backend
+    participant Custodian
+    participant AssetFactory
+    participant AssetToken
+
+    Issuer->>Backend: Submit asset documentation
+    Backend->>Custodian: Verify custody
+    Custodian-->>Backend: Custody confirmation
+    Backend->>AssetFactory: Deploy new AssetToken
+    AssetFactory-->>Backend: Token address
+    Backend-->>Issuer: Asset ready for issuance
+
+
+%% =====================================================
+%% 3. Investor Onboarding Flow
+%% =====================================================
+
+sequenceDiagram
+
+    participant Investor
+    participant SuperApp
+    participant Backend
+    participant KYC
+    participant Compliance
+
+    Investor->>SuperApp: Sign up
+    SuperApp->>Backend: Create KYC session
+    Backend->>KYC: Identity verification
+    KYC-->>Backend: KYC result
+    Backend->>Compliance: setAllowlist(wallet, true)
+    Backend-->>Investor: Investor approved
+
+%% =====================================================
+%% 4. Primary Issuance (Subscription Flow)
+%% =====================================================
+
+sequenceDiagram
+
+    participant Investor
+    participant Backend
+    participant Escrow
+    participant Issuance
+    participant Token
+
+    Investor->>Backend: Submit subscription request
+    Investor->>Escrow: Transfer USDC
+    Escrow-->>Backend: Transfer event detected
+    Backend->>Issuance: Approve subscription
+    Issuance->>Token: Mint tokens
+    Token-->>Investor: Tokens transferred
+
+
+%% =====================================================
+%% 5. Secondary Transfer with Compliance Enforcement
+%% =====================================================
+
+sequenceDiagram
+
+    participant InvestorA
+    participant InvestorB
+    participant Token
+    participant Compliance
+
+    InvestorA->>Token: transfer(to, amount)
+    Token->>Compliance: validateTransfer(from, to, amount)
+    Compliance-->>Token: true / false
+
+    alt Valid
+        Token-->>InvestorB: Transfer executed
+    else Invalid
+        Token-->>InvestorA: Revert transaction
+    end
+
+%% =====================================================
+%% 6. Dividend Distribution Flow
+%% =====================================================
+
+sequenceDiagram
+
+    participant Issuer
+    participant Token
+    participant Corporate
+    participant Investor
+
+    Issuer->>Token: snapshot()
+    Issuer->>Corporate: fundDividend(snapshotId, amount)
+    Investor->>Corporate: claimDividend(snapshotId)
+    Corporate-->>Investor: Stablecoin payout
+
+
+%% =====================================================
+%% 7. Redemption Flow
+%% =====================================================
+
+sequenceDiagram
+
+    participant Investor
+    participant Corporate
+    participant Token
+    participant Backend
+    participant Custodian
+
+    Investor->>Corporate: requestRedemption(amount)
+    Corporate->>Token: burn(amount)
+    Backend->>Custodian: Trigger payout
+    Custodian-->>Investor: Underlying asset / payout
+
+%% =====================================================
+%% 8. Governance & Upgrade Flow
+%% =====================================================
+
+sequenceDiagram
+
+    participant GovernanceMultisig
+    participant Timelock
+    participant Proxy
+    participant Implementation
+
+    GovernanceMultisig->>Timelock: Propose upgrade
+    Timelock-->>GovernanceMultisig: Delay period
+    GovernanceMultisig->>Proxy: Upgrade implementation
+    Proxy->>Implementation: New logic activated
