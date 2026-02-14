@@ -114,3 +114,41 @@ This repository does **not** include:
 - Formal third-party audit
 
 **Objective:** Demonstrate secure system design, regulatory realism, and protocol-level architectural depth.
+
+
+# 7️⃣ Web Application Technical Architecture (Optional Extension)
+
+**Directory:** `/docs/webapp-architecture/`
+
+## Overview
+
+Concrete implementation view of the off-chain orchestration layer interacting with the compliance-first RWA protocol.
+
+## Technology Stack
+
+| Component | Technology |
+|-----------|-----------|
+| Frontend | Next.js |
+| Backend Runtime | Node.js / TypeScript |
+| Database | PostgreSQL |
+| Cache Layer | Redis |
+| Queue System | BullMQ / RabbitMQ |
+| Web3 Interaction | ethers.js / viem |
+| MPC Custody | Fireblocks / Anchorage |
+| KYC Provider | SumSub / Onfido |
+| Stablecoin Settlement | USDC on Arbitrum |
+
+## Responsibilities
+
+The web application layer:
+
+- Orchestrates KYC, subscription, and reconciliation workflows
+- Signs transactions via MPC custody
+- Indexes on-chain events for reporting and audit
+- **Does not enforce compliance logic** (remains on-chain)
+
+## Design Principles
+
+✅ Production-ready infrastructure  
+✅ Full-stack awareness  
+✅ Preserves protocol's deterministic compliance guarantees  
